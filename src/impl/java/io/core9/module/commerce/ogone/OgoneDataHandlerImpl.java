@@ -60,7 +60,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 	/**
 	 * Generate a SHA-1 Signature for ogone
-	 * TODO Make more dynamic, to allow additional fields
+	 * TODO Make more dynamic, to allow additional fields (use CommerceEncryptionPlugin)
 	 * @param req
 	 * @param config
 	 * @param order
