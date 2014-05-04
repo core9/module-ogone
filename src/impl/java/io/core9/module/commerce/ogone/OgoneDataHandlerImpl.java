@@ -15,6 +15,15 @@ import java.util.TreeMap;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
 
+/**
+ * Ogone DataHandler
+ * Handles Ogone payments via the widgets flow.
+ * 
+ * TODO: Handle Ogone return URL (success/failure)
+ * 
+ * @author mark.wienk@core9.io
+ *
+ */
 @PluginImplementation
 public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	
