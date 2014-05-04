@@ -1,47 +1,43 @@
 package io.core9.module.commerce.ogone;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import io.core9.plugin.widgets.datahandler.DataHandlerDefaultConfig;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
 
 public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements DataHandlerFactoryConfig {
 	
-	private String pspid;
-	private boolean test;
-	private String acceptUrl;
-	private String currency;
-	private String language;
+	private Map<String,String> values;
+	private List<KeyValueEntry> rest;
 	private String shaInValue;
-
-	public String getAcceptUrl() {
-		return acceptUrl;
-	}
-
-	public void setAcceptUrl(String acceptUrl) {
-		this.acceptUrl = acceptUrl;
-	}
+	private boolean test;
+	
 
 	public String getCurrency() {
-		return currency;
+		return values.get("CURRENCY");
 	}
 
 	public void setCurrency(String currency) {
-		this.currency = currency;
+		this.values.put("CURRENCY", currency);
 	}
 
 	public String getLanguage() {
-		return language;
+		return this.values.get("LANGUAGE");
 	}
 
 	public void setLanguage(String language) {
-		this.language = language;
+		this.values.put("LANGUAGE", language);
 	}
 
 	public String getPspid() {
-		return pspid;
+		return values.get("PSPID");
 	}
 
 	public void setPspid(String pspid) {
-		this.pspid = pspid;
+		this.values.put("PSPID", pspid);
 	}
 
 	public boolean isTest() {
@@ -53,11 +49,31 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 	}
 
 	public String getShaInValue() {
-		return shaInValue;
+		return this.shaInValue;
 	}
 
 	public void setShaInValue(String shaInValue) {
 		this.shaInValue = shaInValue;
+	}
+
+	public List<KeyValueEntry> getRest() {
+		return rest;
+	}
+
+	public void setRest(List<KeyValueEntry> rest) {
+		this.rest = rest;
+	}
+	
+	public OgoneDataHandlerConfig() {
+		this.values = new HashMap<String, String>();
+	}
+	
+	public TreeMap<String,String> retrieveFields() {
+		TreeMap<String,String> result = new TreeMap<String, String>(values);
+		for(KeyValueEntry entry : rest) {
+			result.put(entry.getKey().toUpperCase(), entry.getValue());
+		}
+		return result;
 	}
 
 }

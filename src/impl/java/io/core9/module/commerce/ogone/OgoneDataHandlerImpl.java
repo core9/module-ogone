@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
@@ -38,16 +39,15 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 			@Override
 			public Map<String, Object> handle(Request req) {
 				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
+				TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order);
+				generateSignature(req, config, values);
+								
 				Map<String, Object> result = new HashMap<String, Object>();
 				result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
-				//TODO Make more dynamic, to allow additional fields
 				result.put("amount", order.getCart().getTotal());
-				result.put("pspid", ((OgoneDataHandlerConfig) options).getPspid());
-				result.put("acceptUrl", config.getAcceptUrl());
 				result.put("orderid", order.getId());
-				result.put("currency", config.getCurrency());
-				result.put("language", config.getLanguage());
-				result.put("shasign", generateSignature(req, config, order));
+				result.put("ogoneconfig", values);
+				
 				return result;
 			}
 
@@ -56,6 +56,12 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 				return (OgoneDataHandlerConfig) options;
 			}
 		};
+	}
+	
+	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order) {
+		fields.put("AMOUNT", "" + order.getCart().getTotal());
+		fields.put("ORDERID", order.getId());
+		return fields;
 	}
 
 	/**
@@ -66,15 +72,12 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	 * @param order
 	 * @return
 	 */
-	private String generateSignature(Request req, OgoneDataHandlerConfig config, Order order) {
+	private String generateSignature(Request req, OgoneDataHandlerConfig config, TreeMap<String,String> fields) {
 		String shaInValue = config.getShaInValue();
 		String input = "";
-		input += "ACCEPTURL=" + config.getAcceptUrl() + shaInValue;
-		input += "AMOUNT=" + order.getCart().getTotal() + shaInValue;
-		input += "CURRENCY=" + config.getCurrency() + shaInValue;
-		input += "LANGUAGE=" + config.getLanguage() + shaInValue;
-		input += "ORDERID=" + order.getId() + shaInValue;
-		input += "PSPID=" + config.getPspid() + shaInValue;
+		for(Map.Entry<String,String> entry : fields.entrySet()) {
+			input += entry.getKey() + "=" + entry.getValue() + shaInValue;
+		}
 		
 		byte[] bytes = input.getBytes();
 
@@ -84,7 +87,9 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-		return bytesToHex(md.digest(bytes)).toUpperCase();
+		String result = bytesToHex(md.digest(bytes)).toUpperCase();
+		fields.put("SHASIGN", result);
+		return result;
 	}
 	
 	private String bytesToHex(byte[] bytes) {
