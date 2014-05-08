@@ -13,6 +13,7 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 	private Map<String,String> values;
 	private List<KeyValueEntry> rest;
 	private String shaInValue;
+	private String shaOutValue;
 	private boolean test;
 	
 
@@ -54,6 +55,14 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 
 	public void setShaInValue(String shaInValue) {
 		this.shaInValue = shaInValue;
+	}
+	
+	public String getShaOutValue() {
+		return this.shaOutValue;
+	}
+
+	public void setShaOutValue(String shaOutValue) {
+		this.shaOutValue = shaOutValue;
 	}
 
 	public List<KeyValueEntry> getRest() {

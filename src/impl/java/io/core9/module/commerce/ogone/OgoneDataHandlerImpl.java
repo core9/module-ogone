@@ -47,16 +47,23 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 			@Override
 			public Map<String, Object> handle(Request req) {
-				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
-				TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order);
-				generateSignature(req, config, values);
-								
 				Map<String, Object> result = new HashMap<String, Object>();
-				result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
-				result.put("amount", order.getCart().getTotal());
-				result.put("orderid", order.getId());
-				result.put("ogoneconfig", values);
-				
+				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
+				if(order == null) {
+					req.getResponse().sendRedirect(301, "/");
+					return result;
+				}
+				if(req.getParams().size() == 0 || !handleReturnedResult(req, order)) {
+					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
+						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
+					}
+					TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order);
+					generateSignature(config.getShaInValue(), values);
+					result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
+					result.put("amount", order.getCart().getTotal());
+					result.put("orderid", order.getId());
+					result.put("ogoneconfig", values);
+				}
 				return result;
 			}
 
@@ -64,7 +71,60 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 			public OgoneDataHandlerConfig getOptions() {
 				return (OgoneDataHandlerConfig) options;
 			}
+			
+			/**
+			 * Handle the returned request from Ogone
+			 * @param req
+			 * @param order 
+			 * @return
+			 */
+			private boolean handleReturnedResult(Request req, Order order) {
+				TreeMap<String,String> ordered = new TreeMap<String,String>();
+				String shaSignature = null;
+				for(Map.Entry<String, Object> entry : req.getParams().entrySet()) {
+					if(entry.getValue() != null && !entry.getValue().equals("")) {
+						if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
+							shaSignature = (String) entry.getValue();
+						} else {
+							ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue());
+						}
+					}
+				}
+				if(shaSignature == null) {
+					return false;
+				}
+				String signature = generateSignature(config.getShaOutValue(), ordered);
+				if(signature.equals(shaSignature)) {
+					order.setPaymentData(new HashMap<String,Object>(ordered));
+					if(req.getParams().get("STATUS").equals("9")){
+						return true;
+					};
+				}
+				return false;
+			}
 		};
+	}
+
+	/**
+	 * return the ogone status message
+	 * @param order 
+	 * @param status
+	 * @return
+	 */
+	private String returnStatusMessage(Order order, String status) {
+		switch(status) {
+		case "1":
+			order.setId(null);
+			return "Order canceled by customer";
+		case "2":
+			order.setId(null);
+			return "Order not authorized, please use another payment method.";
+		case "9":
+			return null;
+		default:
+			order.setId(null);
+			return "Something went wrong, please try another payment method.";
+		}
 	}
 	
 	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order) {
@@ -75,17 +135,15 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 	/**
 	 * Generate a SHA-1 Signature for ogone
-	 * TODO Make more dynamic, to allow additional fields (use CommerceEncryptionPlugin)
 	 * @param req
-	 * @param config
+	 * @param key
 	 * @param order
 	 * @return
 	 */
-	private String generateSignature(Request req, OgoneDataHandlerConfig config, TreeMap<String,String> fields) {
-		String shaInValue = config.getShaInValue();
+	private String generateSignature(String key, TreeMap<String,String> fields) {
 		String input = "";
 		for(Map.Entry<String,String> entry : fields.entrySet()) {
-			input += entry.getKey() + "=" + entry.getValue() + shaInValue;
+			input += entry.getKey() + "=" + entry.getValue() + key;
 		}
 		
 		byte[] bytes = input.getBytes();
