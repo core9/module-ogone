@@ -60,7 +60,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 					TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order);
 					generateSignature(config.getShaInValue(), values);
 					result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
-					result.put("amount", order.getCart().getTotal());
+					result.put("amount", order.getTotal());
 					result.put("orderid", order.getId());
 					result.put("ogoneconfig", values);
 				}
@@ -128,7 +128,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	}
 	
 	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order) {
-		fields.put("AMOUNT", "" + order.getCart().getTotal());
+		fields.put("AMOUNT", "" + order.getTotal());
 		fields.put("ORDERID", order.getId());
 		return fields;
 	}
