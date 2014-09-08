@@ -23,5 +23,6 @@ dependencies {
   apiCompile 'io.core9:core-api:+'
   apiCompile 'io.core9:module-widgets-api:+'
   apiCompile 'io.core9:module-commerce-api:+'
+  implCompile 'io.core9:module-commerce:+' //TODO: remove this (impl)
   implCompile 'io.core9:module-authentication-api:+'
 }
