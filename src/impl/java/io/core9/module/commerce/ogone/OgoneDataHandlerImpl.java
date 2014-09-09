@@ -1,9 +1,7 @@
 package io.core9.module.commerce.ogone;
 
 import io.core9.commerce.checkout.Order;
-import io.core9.commerce.checkout.OrderImpl;
 import io.core9.module.auth.AuthenticationPlugin;
-import io.core9.plugin.database.repository.DataUtils;
 import io.core9.plugin.server.request.Request;
 import io.core9.plugin.widgets.datahandler.DataHandler;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
@@ -47,16 +45,10 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 		final OgoneDataHandlerConfig config = (OgoneDataHandlerConfig) options; 
 		return new DataHandler<OgoneDataHandlerConfig>() {
 
-			@SuppressWarnings("unchecked")
 			@Override
 			public Map<String, Object> handle(Request req) {
 				Map<String, Object> result = new HashMap<String, Object>();
-				Object tmp = auth.getUser(req).getSession().getAttribute("order");
-				OrderImpl order = null;
-				if(tmp instanceof Map) {
-					order = DataUtils.toObject((Map<String,Object>) tmp, OrderImpl.class);
-				}
-				
+				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
 				if(order == null) {
 					req.getResponse().sendRedirect(301, "/");
 					return result;
