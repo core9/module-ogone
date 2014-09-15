@@ -2,6 +2,7 @@ package io.core9.module.commerce.ogone;
 
 import io.core9.commerce.checkout.Order;
 import io.core9.module.auth.AuthenticationPlugin;
+import io.core9.module.auth.Session;
 import io.core9.plugin.server.Cookie;
 import io.core9.plugin.server.Server;
 import io.core9.plugin.server.request.Request;
@@ -10,7 +11,6 @@ import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -53,13 +53,17 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 			@Override
 			public Map<String, Object> handle(Request req) {
+				Session session = null;
+				//FIXME QUICK AND DIRTY OGONE FIX
 				if(req.getParams().get("COMPLUS") != null && req.getCookie("CORE9SESSIONID") == null) {
 					Cookie cookie = server.newCookie("CORE9SESSIONID");
 					cookie.setValue((String) req.getParams().get("COMPLUS"));
-					req.setCookies(Arrays.asList(cookie));
+					session = auth.getUser(req, cookie).getSession();
+				} else {
+					session = auth.getUser(req).getSession();
 				}
 				Map<String, Object> result = new HashMap<String, Object>();
-				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
+				Order order = (Order) session.getAttribute("order");
 				if(order == null) {
 					req.getResponse().sendRedirect(301, "/");
 					return result;
