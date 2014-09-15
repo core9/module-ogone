@@ -53,7 +53,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 			@Override
 			public Map<String, Object> handle(Request req) {
-				if(req.getParams().get("COMPLUS") != null && req.getCookie("CORE9SESSIONID") != null) {
+				if(req.getParams().get("COMPLUS") != null && req.getCookie("CORE9SESSIONID") == null) {
 					Cookie cookie = server.newCookie("CORE9SESSIONID");
 					cookie.setValue((String) req.getParams().get("COMPLUS"));
 					req.setCookies(Arrays.asList(cookie));
@@ -68,7 +68,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
 						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
 					}
-					TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order);
+					TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order, req);
 					generateSignature(config.getShaInValue(), values);
 					result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
 					result.put("amount", order.getTotal());
@@ -138,9 +138,10 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 		}
 	}
 	
-	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order) {
+	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order, Request req) {
 		fields.put("AMOUNT", "" + order.getTotal());
 		fields.put("ORDERID", order.getId());
+		fields.put("COMPLUS", req.getCookie("CORE9SESSIONID").getValue());
 		return fields;
 	}
 
