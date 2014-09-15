@@ -2,12 +2,15 @@ package io.core9.module.commerce.ogone;
 
 import io.core9.commerce.checkout.Order;
 import io.core9.module.auth.AuthenticationPlugin;
+import io.core9.plugin.server.Cookie;
+import io.core9.plugin.server.Server;
 import io.core9.plugin.server.request.Request;
 import io.core9.plugin.widgets.datahandler.DataHandler;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -29,6 +32,9 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	
 	@InjectPlugin
 	private AuthenticationPlugin auth;
+	
+	@InjectPlugin
+	private Server server;
 
 	@Override
 	public String getName() {
@@ -47,6 +53,11 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 
 			@Override
 			public Map<String, Object> handle(Request req) {
+				if(req.getParams().get("COMPLUS") != null && req.getCookie("CORE9SESSIONID") != null) {
+					Cookie cookie = server.newCookie("CORE9SESSIONID");
+					cookie.setValue((String) req.getParams().get("COMPLUS"));
+					req.setCookies(Arrays.asList(cookie));
+				}
 				Map<String, Object> result = new HashMap<String, Object>();
 				Order order = (Order) auth.getUser(req).getSession().getAttribute("order");
 				if(order == null) {
