@@ -1,5 +1,6 @@
 package io.core9.module.commerce.ogone;
 
+import io.core9.commerce.CommerceDataHandlerHelper;
 import io.core9.commerce.checkout.Order;
 import io.core9.module.auth.AuthenticationPlugin;
 import io.core9.module.auth.Session;
@@ -32,6 +33,9 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	
 	@InjectPlugin
 	private AuthenticationPlugin auth;
+	
+	@InjectPlugin
+	private CommerceDataHandlerHelper helper;
 	
 	@InjectPlugin
 	private Server server;
@@ -79,6 +83,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 					result.put("orderid", order.getId());
 					result.put("ogoneconfig", values);
 				}
+				helper.saveOrder(req, order);
 				return result;
 			}
 
@@ -112,6 +117,7 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 				if(signature.equals(shaSignature)) {
 					order.setPaymentData(new HashMap<String,Object>(ordered));
 					if(req.getParams().get("STATUS").equals("9")){
+						order.setStatus("paid");
 						return true;
 					};
 				}
