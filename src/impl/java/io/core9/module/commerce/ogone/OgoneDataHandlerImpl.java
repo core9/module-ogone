@@ -2,9 +2,6 @@ package io.core9.module.commerce.ogone;
 
 import io.core9.commerce.CommerceDataHandlerHelper;
 import io.core9.commerce.checkout.Order;
-import io.core9.module.auth.AuthenticationPlugin;
-import io.core9.module.auth.Session;
-import io.core9.plugin.server.Cookie;
 import io.core9.plugin.server.Server;
 import io.core9.plugin.server.request.Request;
 import io.core9.plugin.widgets.datahandler.DataHandler;
@@ -23,16 +20,11 @@ import net.xeoh.plugins.base.annotations.injections.InjectPlugin;
  * Ogone DataHandler
  * Handles Ogone payments via the widgets flow.
  * 
- * TODO: Handle Ogone return URL (success/failure)
- * 
  * @author mark.wienk@core9.io
  *
  */
 @PluginImplementation
-public class OgoneDataHandlerImpl implements OgoneDataHandler {
-	
-	@InjectPlugin
-	private AuthenticationPlugin auth;
+public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements OgoneDataHandler<T> {
 	
 	@InjectPlugin
 	private CommerceDataHandlerHelper helper;
@@ -51,28 +43,16 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 	}
 
 	@Override
-	public DataHandler<OgoneDataHandlerConfig> createDataHandler(final DataHandlerFactoryConfig options) {
-		final OgoneDataHandlerConfig config = (OgoneDataHandlerConfig) options; 
-		return new DataHandler<OgoneDataHandlerConfig>() {
+	public DataHandler<T> createDataHandler(final DataHandlerFactoryConfig options) {
+		@SuppressWarnings("unchecked")
+		final T config = (T) options; 
+		return new DataHandler<T>() {
 
 			@Override
 			public Map<String, Object> handle(Request req) {
-				Session session = null;
-				//FIXME QUICK AND DIRTY OGONE FIX
-				if(req.getParams().get("COMPLUS") != null && req.getCookie("CORE9SESSIONID") == null) {
-					Cookie cookie = server.newCookie("CORE9SESSIONID");
-					cookie.setValue((String) req.getParams().get("COMPLUS"));
-					session = auth.getUser(req, cookie).getSession();
-				} else {
-					session = auth.getUser(req).getSession();
-				}
+				Order order = helper.getOrder(req);
 				Map<String, Object> result = new HashMap<String, Object>();
-				Order order = (Order) session.getAttribute("order");
-				if(order == null) {
-					req.getResponse().sendRedirect(301, "/");
-					return result;
-				}
-				if(req.getParams().size() == 0 || !handleReturnedResult(req, order)) {
+				if(req.getParams().size() == 0 || !handleReturnedResult(req, config, order)) {
 					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
 						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
 					}
@@ -88,42 +68,42 @@ public class OgoneDataHandlerImpl implements OgoneDataHandler {
 			}
 
 			@Override
-			public OgoneDataHandlerConfig getOptions() {
-				return (OgoneDataHandlerConfig) options;
-			}
-			
-			/**
-			 * Handle the returned request from Ogone
-			 * @param req
-			 * @param order 
-			 * @return
-			 */
-			private boolean handleReturnedResult(Request req, Order order) {
-				TreeMap<String,String> ordered = new TreeMap<String,String>();
-				String shaSignature = null;
-				for(Map.Entry<String, Object> entry : req.getParams().entrySet()) {
-					if(entry.getValue() != null && !entry.getValue().equals("")) {
-						if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
-							shaSignature = (String) entry.getValue();
-						} else {
-							ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue());
-						}
-					}
-				}
-				if(shaSignature == null) {
-					return false;
-				}
-				String signature = generateSignature(config.getShaOutValue(), ordered);
-				if(signature.equals(shaSignature)) {
-					order.setPaymentData(new HashMap<String,Object>(ordered));
-					if(req.getParams().get("STATUS").equals("9")){
-						order.setStatus("paid");
-						return true;
-					};
-				}
-				return false;
+			public T getOptions() {
+				return config;
 			}
 		};
+	}
+	
+	/**
+	 * Handle the returned request from Ogone
+	 * @param req
+	 * @param order 
+	 * @return
+	 */
+	private boolean handleReturnedResult(Request req, T config, Order order) {
+		TreeMap<String,String> ordered = new TreeMap<String,String>();
+		String shaSignature = null;
+		for(Map.Entry<String, Object> entry : req.getParams().entrySet()) {
+			if(entry.getValue() != null && !entry.getValue().equals("")) {
+				if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
+					shaSignature = (String) entry.getValue();
+				} else {
+					ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue());
+				}
+			}
+		}
+		if(shaSignature == null) {
+			return false;
+		}
+		String signature = generateSignature(config.getShaOutValue(), ordered);
+		if(signature.equals(shaSignature)) {
+			order.setPaymentData(new HashMap<String,Object>(ordered));
+			if(req.getParams().get("STATUS").equals("9")){
+				order.setStatus("paid");
+				return true;
+			};
+		}
+		return false;
 	}
 
 	/**
