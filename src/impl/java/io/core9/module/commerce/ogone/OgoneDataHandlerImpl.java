@@ -9,8 +9,10 @@ import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import net.xeoh.plugins.base.annotations.PluginImplementation;
@@ -52,7 +54,7 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 			public Map<String, Object> handle(Request req) {
 				Order order = helper.getOrder(req);
 				Map<String, Object> result = new HashMap<String, Object>();
-				if(req.getParams().size() == 0 || !handleReturnedResult(req, config, order)) {
+				if(req.getQueryParams().size() == 0 || !handleReturnedResult(req, config, order)) {
 					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
 						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
 					}
@@ -83,12 +85,12 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 	private boolean handleReturnedResult(Request req, T config, Order order) {
 		TreeMap<String,String> ordered = new TreeMap<String,String>();
 		String shaSignature = null;
-		for(Map.Entry<String, Object> entry : req.getParams().entrySet()) {
+		for(Entry<String, Deque<String>> entry : req.getQueryParams().entrySet()) {
 			if(entry.getValue() != null && !entry.getValue().equals("")) {
 				if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
-					shaSignature = (String) entry.getValue();
+					shaSignature = (String) entry.getValue().getFirst();
 				} else {
-					ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue());
+					ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue().getFirst());
 				}
 			}
 		}
@@ -98,7 +100,7 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 		String signature = generateSignature(config.getShaOutValue(), ordered);
 		if(signature.equals(shaSignature)) {
 			order.setPaymentData(new HashMap<String,Object>(ordered));
-			if(req.getParams().get("STATUS").equals("9")){
+			if(req.getQueryParams().get("STATUS").getFirst().equals("9")){
 				order.setStatus("paid");
 				return true;
 			};
