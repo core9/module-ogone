@@ -86,7 +86,7 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 		TreeMap<String,String> ordered = new TreeMap<String,String>();
 		String shaSignature = null;
 		for(Entry<String, Deque<String>> entry : req.getQueryParams().entrySet()) {
-			if(entry.getValue() != null && !entry.getValue().equals("")) {
+			if(entry.getValue() != null && !entry.getValue().getFirst().equals("")) {
 				if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
 					shaSignature = (String) entry.getValue().getFirst();
 				} else {
