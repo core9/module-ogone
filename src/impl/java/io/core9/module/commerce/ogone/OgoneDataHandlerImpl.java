@@ -55,6 +55,9 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 				Order order = helper.getOrder(req);
 				Map<String, Object> result = new HashMap<String, Object>();
 				if(req.getQueryParams().size() == 0 || !handleReturnedResult(req, config, order)) {
+					if(order.getStatus().equals("paying")) {
+						order = helper.renewOrderID(req); // @TEMPFIX Create new order ID in case Ogone already processed this one
+					}
 					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
 						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
 					}
