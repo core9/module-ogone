@@ -143,11 +143,11 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 		@SuppressWarnings("unchecked")
 		Map<String, String> options = (Map<String,String>) session.getAttribute("paymentmethodoptions");
 		if(options != null) {
-			options.forEach((key, value) -> {
-				if(ALLOWED_TYPES.contains(key)) {
-					fields.put(key, value);
+			for(Map.Entry<String, String> entry : options.entrySet()) {
+				if(ALLOWED_TYPES.contains(entry.getKey())) {
+					fields.put(entry.getKey(), entry.getValue());
 				}
-			});
+			}
 		}
 		addInvoiceDataToMap(fields, order);
 		addDeliveryDataToMap(fields, order);
