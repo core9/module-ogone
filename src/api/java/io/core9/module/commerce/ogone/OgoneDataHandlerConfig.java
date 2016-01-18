@@ -78,7 +78,8 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 	}
 	
 	public TreeMap<String,String> retrieveFields() {
-		TreeMap<String,String> result = new TreeMap<String, String>(values);
+		TreeMap<String,String> result = new TreeMap<String, String>(new ItemNumberComparator());
+		result.putAll(values);
 		for(KeyValueEntry entry : rest) {
 			result.put(entry.getKey().toUpperCase(), entry.getValue());
 		}
