@@ -66,7 +66,7 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
 						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
 					}
-					TreeMap<String, String> values = addOrderContent(config.retrieveFields(), order, req);
+					TreeMap<String, String> values = addOrderContent(config.retrieveFields(req.getVirtualHost()), order, req);
 					generateSignature(config.getShaInValue(), values);
 					result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
 					result.put("amount", order.getTotal());

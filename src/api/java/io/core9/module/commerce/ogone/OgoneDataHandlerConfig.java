@@ -1,14 +1,18 @@
 package io.core9.module.commerce.ogone;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import io.core9.plugin.server.VirtualHost;
 import io.core9.plugin.widgets.datahandler.DataHandlerDefaultConfig;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
 
 public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements DataHandlerFactoryConfig {
+	
+	private static final List<String> URL_TYPES = Arrays.asList("ACCEPTURL", "DECLINEURL", "EXCEPTIONURL", "CANCELURL", "TP");
 	
 	private Map<String,String> values;
 	private List<KeyValueEntry> rest;
@@ -77,11 +81,16 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 		this.values = new HashMap<String, String>();
 	}
 	
-	public TreeMap<String,String> retrieveFields() {
+	public TreeMap<String,String> retrieveFields(VirtualHost vhost) {
 		TreeMap<String,String> result = new TreeMap<String, String>(new ItemNumberComparator());
 		result.putAll(values);
 		for(KeyValueEntry entry : rest) {
-			result.put(entry.getKey().toUpperCase(), entry.getValue());
+			String value = entry.getValue();
+			if(URL_TYPES.contains(entry.getKey()) && !value.startsWith("http")) {
+				if(!value.startsWith("/")) value = "/" + value;
+				value = "https://" + vhost.getHostname() + value;
+			}
+			result.put(entry.getKey().toUpperCase(), value);
 		}
 		return result;
 	}
