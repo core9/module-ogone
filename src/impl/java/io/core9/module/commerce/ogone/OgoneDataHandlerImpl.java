@@ -170,13 +170,13 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 	}
 	
 	private void addDeliveryDataToMap(TreeMap<String, String> fields, Order order) {
-		fields.put("ECOM_SHIPTO_POSTAL_NAME_FIRST", cutAt(order.getBilling().getFname(), 35));
-		fields.put("ECOM_SHIPTO_POSTAL_NAME_LAST", cutAt(order.getBilling().getLname(), 35));
-		fields.put("ECOM_SHIPTO_POSTAL_STREET_LINE1", cutAt(order.getBilling().getStreet(), 35));
-		fields.put("ECOM_SHIPTO_POSTAL_STREET_NUMBER", cutAt(order.getBilling().getStreet2(), 10));
-		fields.put("ECOM_SHIPTO_POSTAL_POSTALCODE", cutAt(order.getBilling().getPostalcode(), 10));
-		fields.put("ECOM_SHIPTO_POSTAL_CITY", cutAt(order.getBilling().getCity(), 25));
-		fields.put("ECOM_SHIPTO_POSTAL_COUNTRYCODE", cutAt(order.getBilling().getCountry(), 2));
+		fields.put("ECOM_SHIPTO_POSTAL_NAME_FIRST", cutAt(order.getShipping().getFname(), 35));
+		fields.put("ECOM_SHIPTO_POSTAL_NAME_LAST", cutAt(order.getShipping().getLname(), 35));
+		fields.put("ECOM_SHIPTO_POSTAL_STREET_LINE1", cutAt(order.getShipping().getStreet(), 35));
+		fields.put("ECOM_SHIPTO_POSTAL_STREET_NUMBER", cutAt(order.getShipping().getStreet2(), 10));
+		fields.put("ECOM_SHIPTO_POSTAL_POSTALCODE", cutAt(order.getShipping().getPostalcode(), 10));
+		fields.put("ECOM_SHIPTO_POSTAL_CITY", cutAt(order.getShipping().getCity(), 25));
+		fields.put("ECOM_SHIPTO_POSTAL_COUNTRYCODE", cutAt(order.getShipping().getCountry(), 2));
 	}
 	
 	private void addCartDataToMap(TreeMap<String, String> fields, Order order) {
