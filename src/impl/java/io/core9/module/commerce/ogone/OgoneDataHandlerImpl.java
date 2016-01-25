@@ -3,18 +3,15 @@ package io.core9.module.commerce.ogone;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import io.core9.commerce.CommerceDataHandlerHelper;
 import io.core9.commerce.cart.lineitem.LineItem;
 import io.core9.commerce.checkout.Order;
 import io.core9.module.auth.Session;
-import io.core9.plugin.server.Server;
 import io.core9.plugin.server.request.Request;
 import io.core9.plugin.widgets.datahandler.DataHandler;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
@@ -35,9 +32,6 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 	
 	@InjectPlugin
 	private CommerceDataHandlerHelper helper;
-	
-	@InjectPlugin
-	private Server server;
 
 	@Override
 	public String getName() {
@@ -59,20 +53,15 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 			public Map<String, Object> handle(Request req) {
 				Order order = helper.getOrder(req);
 				Map<String, Object> result = new HashMap<String, Object>();
-				if(req.getQueryParams().size() == 0 || !handleReturnedResult(req, config, order)) {
-					if(order.getStatus().equals("paying")) {
-						order = helper.renewOrderID(req); // New ID is needed for second request
-					}
-					if(order.getPaymentData() != null && order.getPaymentData().get("STATUS") != null) {
-						result.put("status", returnStatusMessage(order, (String) order.getPaymentData().get("STATUS")));
-					}
-					TreeMap<String, String> values = addOrderContent(config.retrieveFields(req.getVirtualHost()), order, req);
-					generateSignature(config.getShaInValue(), values);
-					result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
-					result.put("amount", order.getTotal());
-					result.put("orderid", order.getId());
-					result.put("ogoneconfig", values);
+				if(order.getStatus().equals("paying") || order.getStatus().equals("uncertain") || order.getStatus().equals("notified")) {
+					order = helper.incrementPaymentCounter(req); // New ID is needed for second request
 				}
+				TreeMap<String, String> values = addOrderContent(config.retrieveFields(req.getVirtualHost()), order, req);
+				generateSignature(config.getShaInValue(), values);
+				result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
+				result.put("amount", order.getTotal());
+				result.put("orderid", order.getPaymentId());
+				result.put("ogoneconfig", values);
 				helper.saveOrder(req, order);
 				return result;
 			}
@@ -82,60 +71,6 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 				return config;
 			}
 		};
-	}
-	
-	/**
-	 * Handle the returned request from Ogone
-	 * @param req
-	 * @param order 
-	 * @return
-	 */
-	private boolean handleReturnedResult(Request req, T config, Order order) {
-		TreeMap<String,String> ordered = new TreeMap<String,String>();
-		String shaSignature = null;
-		for(Entry<String, Deque<String>> entry : req.getQueryParams().entrySet()) {
-			if(entry.getValue() != null && !entry.getValue().getFirst().equals("")) {
-				if(entry.getKey().equalsIgnoreCase("SHASIGN")) {
-					shaSignature = (String) entry.getValue().getFirst();
-				} else {
-					ordered.put(entry.getKey().toUpperCase(), (String) entry.getValue().getFirst());
-				}
-			}
-		}
-		if(shaSignature == null) {
-			return false;
-		}
-		String signature = generateSignature(config.getShaOutValue(), ordered);
-		if(signature.equals(shaSignature)) {
-			order.setPaymentData(new HashMap<String,Object>(ordered));
-			if(req.getQueryParams().get("STATUS").getFirst().equals("9")){
-				order.setStatus("paid");
-				return true;
-			};
-		}
-		return false;
-	}
-
-	/**
-	 * return the ogone status message
-	 * @param order 
-	 * @param status
-	 * @return
-	 */
-	private String returnStatusMessage(Order order, String status) {
-		switch(status) {
-		case "1":
-			order.setId(null);
-			return "Order canceled by customer";
-		case "2":
-			order.setId(null);
-			return "Order not authorized, please use another payment method.";
-		case "9":
-			return null;
-		default:
-			order.setId(null);
-			return "Something went wrong, please try another payment method.";
-		}
 	}
 	
 	private TreeMap<String,String> addOrderContent(TreeMap<String,String> fields, Order order, Request req) {
@@ -153,7 +88,7 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 		addDeliveryDataToMap(fields, order);
 		addCartDataToMap(fields, order);
 		fields.put("AMOUNT", "" + order.getTotal());
-		fields.put("ORDERID", order.getId());
+		fields.put("ORDERID", order.getPaymentId());
 		return fields;
 	}
 	

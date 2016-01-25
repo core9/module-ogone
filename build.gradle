@@ -23,6 +23,6 @@ dependencies {
   apiCompile 'io.core9:core-api:+'
   apiCompile 'io.core9:module-widgets-api:+'
   apiCompile 'io.core9:module-server-api:+'
-  apiCompile 'io.core9:module-commerce-api:+'
+  apiCompile 'io.core9:module-commerce-api:101'
   implCompile 'io.core9:module-authentication-api:+'
 }
