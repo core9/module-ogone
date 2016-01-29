@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import io.core9.commerce.checkout.Order;
 import io.core9.plugin.server.VirtualHost;
 import io.core9.plugin.widgets.datahandler.DataHandlerDefaultConfig;
 import io.core9.plugin.widgets.datahandler.DataHandlerFactoryConfig;
@@ -81,7 +82,7 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 		this.values = new HashMap<String, String>();
 	}
 	
-	public TreeMap<String,String> retrieveFields(VirtualHost vhost) {
+	public TreeMap<String,String> retrieveFields(VirtualHost vhost, Order order) {
 		TreeMap<String,String> result = new TreeMap<String, String>(new ItemNumberComparator());
 		result.putAll(values);
 		for(KeyValueEntry entry : rest) {
@@ -90,6 +91,8 @@ public class OgoneDataHandlerConfig extends DataHandlerDefaultConfig implements 
 				if(!value.startsWith("/")) value = "/" + value;
 				value = "https://" + vhost.getHostname() + value;
 			}
+			value = value.replace(":orderid", order.getId());
+			value = value.replace(":sessionid", order.getSessionId());
 			result.put(entry.getKey().toUpperCase(), value);
 		}
 		return result;

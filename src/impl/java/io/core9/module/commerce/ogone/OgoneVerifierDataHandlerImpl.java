@@ -57,7 +57,7 @@ public class OgoneVerifierDataHandlerImpl<T extends OgoneVerifierDataHandlerConf
 			@Override
 			public Map<String, Object> handle(Request req) {
 				Map<String, Object> result = new HashMap<String, Object>();
-				Order order = helper.getOrder(req);
+				Order order = helper.getRawOrder(req);
 				if(config.getPaymentMethods() != null && config.getPaymentMethods().contains(order.getPaymentmethod())) {
 					Map<String, Object> paymentData = getOgoneData(config, order);
 					handlePaymentData(order, paymentData);
@@ -77,13 +77,17 @@ public class OgoneVerifierDataHandlerImpl<T extends OgoneVerifierDataHandlerConf
 	@Override
 	public Order handlePaymentData(Order order, Map<String, Object> paymentData) {
 		order.setPaymentData(paymentData);
+		if(paymentData.isEmpty()) {
+			order.setStatus("failed");
+			return order;
+		}
 		String strStatus = (String) paymentData.get("STATUS");
 		String orderId = (String) paymentData.get("orderID");
-		if(!orderId.startsWith(order.getId())) {
+		if(orderId == null || !orderId.startsWith(order.getId())) {
 			return null;
 		}
-		if(strStatus.equals("")) {
-			order.setStatus("paying");
+		if(strStatus == null || strStatus.equals("")) {
+			order.setStatus("failed");
 			return order;
 		}
 		int status = Integer.parseInt(strStatus);
@@ -103,7 +107,7 @@ public class OgoneVerifierDataHandlerImpl<T extends OgoneVerifierDataHandlerConf
 		case 2: // Authorization refused
 		case 0:	// Invalid or incomplete
 		default:
-			order.setStatus("paying");
+			order.setStatus("failed");
 			break;
 		}
 		return order;
@@ -119,7 +123,7 @@ public class OgoneVerifierDataHandlerImpl<T extends OgoneVerifierDataHandlerConf
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return null;
+		return new HashMap<String,Object>();
 	}
 	
 	@Override

@@ -53,10 +53,9 @@ public class OgoneDataHandlerImpl<T extends OgoneDataHandlerConfig> implements O
 			public Map<String, Object> handle(Request req) {
 				Order order = helper.getOrder(req);
 				Map<String, Object> result = new HashMap<String, Object>();
-				if(order.getStatus().equals("paying") || order.getStatus().equals("uncertain") || order.getStatus().equals("notified")) {
-					order = helper.incrementPaymentCounter(req); // New ID is needed for second request
-				}
-				TreeMap<String, String> values = addOrderContent(config.retrieveFields(req.getVirtualHost()), order, req);
+				order = helper.incrementPaymentCounter(req); // New ID is needed for second request
+				TreeMap<String, String> values = config.retrieveFields(req.getVirtualHost(), order);
+				values = addOrderContent(values, order, req);
 				generateSignature(config.getShaInValue(), values);
 				result.put("link", config.isTest() ? " https://secure.ogone.com/ncol/test/orderstandard.asp" : " https://secure.ogone.com/ncol/prod/orderstandard.asp");
 				result.put("amount", order.getTotal());
